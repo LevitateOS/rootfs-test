@@ -103,6 +103,18 @@ fn run_tests(tarball: &PathBuf, category: Option<String>, verbose: bool) -> Resu
         // Run test
         let result = test.run(&container);
         print_result(&result, verbose);
+
+        // FAIL FAST: Stop on first failure
+        if !result.passed {
+            println!("\n════════════════════════════════════════════════════════════");
+            println!("FAIL FAST: Stopping on first failure");
+            println!("════════════════════════════════════════════════════════════\n");
+            println!("✗ {} FAILED", result.name);
+            println!("  ensures: {}", result.ensures);
+            println!("  error: {}", result.output);
+            std::process::exit(1);
+        }
+
         results.push(result);
     }
 
