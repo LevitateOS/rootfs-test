@@ -7,3 +7,4 @@ description = "User experience tests for LevitateOS rootfs"
 [dependencies]
 anyhow = "1.0"
 clap = { version = "4", features = ["derive"] }
+cheat-guard = { git = "https://github.com/LevitateOS/cheat_guard.git", branch = "master" }

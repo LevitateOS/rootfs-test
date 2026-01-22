@@ -6,9 +6,12 @@
 //!
 //! Each test chains all operations in a single exec() call to verify
 //! the complete workflow functions correctly end-to-end.
+//!
+//! Uses cheat_ensure! to document cheat vectors in failure messages.
 
 use super::{test_result, Test, TestResult};
 use crate::container::Container;
+use cheat_guard::cheat_ensure;
 
 /// Test: Search text with grep
 struct GrepSearch;
@@ -28,9 +31,14 @@ impl Test for GrepSearch {
                 rm /tmp/log.txt
             "#)?;
 
-            if !result.contains("something broke") {
-                anyhow::bail!("grep didn't find the error line: {}", result);
-            }
+            cheat_ensure!(
+                result.contains("something broke"),
+                protects = "grep finds matching lines",
+                severity = "CRITICAL",
+                cheats = ["Only check grep exit code", "Accept any output"],
+                consequence = "grep broken, can't search logs or configs",
+                "grep didn't find the error line: {}", result
+            );
             Ok("grep pattern matching works".into())
         })
     }
@@ -54,9 +62,14 @@ impl Test for SedEdit {
                 rm /tmp/sed.txt
             "#)?;
 
-            if !result.contains("hello universe") {
-                anyhow::bail!("sed substitution failed: {}", result);
-            }
+            cheat_ensure!(
+                result.contains("hello universe"),
+                protects = "sed performs substitutions correctly",
+                severity = "CRITICAL",
+                cheats = ["Only check sed exit code", "Accept any output"],
+                consequence = "sed broken, can't edit configs programmatically",
+                "sed substitution failed: {}", result
+            );
             Ok("sed s/// works correctly".into())
         })
     }
@@ -80,9 +93,14 @@ impl Test for AwkFields {
                 rm /tmp/data.txt
             "#)?;
 
-            if !result.contains("100") || !result.contains("200") || !result.contains("300") {
-                anyhow::bail!("awk field extraction failed: {}", result);
-            }
+            cheat_ensure!(
+                result.contains("100") && result.contains("200") && result.contains("300"),
+                protects = "awk extracts fields correctly",
+                severity = "HIGH",
+                cheats = ["Only check awk exit code", "Accept any output"],
+                consequence = "awk broken, can't parse structured data",
+                "awk field extraction failed: {}", result
+            );
             Ok("awk field extraction works".into())
         })
     }
@@ -107,9 +125,14 @@ impl Test for SortText {
             "#)?;
 
             let lines: Vec<&str> = result.trim().lines().collect();
-            if lines != vec!["apple", "mango", "zebra"] {
-                anyhow::bail!("sort order wrong: {:?}", lines);
-            }
+            cheat_ensure!(
+                lines == vec!["apple", "mango", "zebra"],
+                protects = "sort orders lines alphabetically",
+                severity = "HIGH",
+                cheats = ["Only check sort exit code", "Accept any order"],
+                consequence = "sort broken, can't organize data",
+                "sort order wrong: {:?}", lines
+            );
             Ok("sort works correctly".into())
         })
     }
@@ -133,9 +156,14 @@ impl Test for WordCount {
                 rm /tmp/wc.txt
             "#)?;
 
-            if result.trim() != "2" {
-                anyhow::bail!("Expected 2 lines, got {}", result.trim());
-            }
+            cheat_ensure!(
+                result.trim() == "2",
+                protects = "wc counts lines correctly",
+                severity = "HIGH",
+                cheats = ["Only check wc exit code", "Accept any count"],
+                consequence = "wc broken, can't count lines/words",
+                "Expected 2 lines, got {}", result.trim()
+            );
             Ok("wc works correctly".into())
         })
     }
@@ -161,13 +189,23 @@ impl Test for HeadTail {
             "#)?;
 
             // Verify head gets first 2 lines
-            if !result.contains("line1") || !result.contains("line2") {
-                anyhow::bail!("head missing expected lines");
-            }
+            cheat_ensure!(
+                result.contains("line1") && result.contains("line2"),
+                protects = "head shows first N lines",
+                severity = "HIGH",
+                cheats = ["Only check head exit code", "Accept any output"],
+                consequence = "head broken, can't preview files",
+                "head missing expected lines"
+            );
             // Verify tail gets last 2 lines
-            if !result.contains("line4") || !result.contains("line5") {
-                anyhow::bail!("tail missing expected lines");
-            }
+            cheat_ensure!(
+                result.contains("line4") && result.contains("line5"),
+                protects = "tail shows last N lines",
+                severity = "HIGH",
+                cheats = ["Only check tail exit code", "Accept any output"],
+                consequence = "tail broken, can't view log ends",
+                "tail missing expected lines"
+            );
             Ok("head and tail work correctly".into())
         })
     }
@@ -191,9 +229,14 @@ impl Test for Pipes {
                 rm /tmp/pipe.txt
             "#)?;
 
-            if result.trim() != "2" {
-                anyhow::bail!("pipe chain failed, expected 2 errors, got {}", result.trim());
-            }
+            cheat_ensure!(
+                result.trim() == "2",
+                protects = "pipes connect command input/output",
+                severity = "CRITICAL",
+                cheats = ["Only check final exit code", "Skip pipe verification"],
+                consequence = "pipes broken, can't chain commands (core Unix feature)",
+                "pipe chain failed, expected 2 errors, got {}", result.trim()
+            );
             Ok("command piping works".into())
         })
     }
@@ -222,9 +265,14 @@ impl Test for Compression {
                 rm -rf /tmp/archive /tmp/archive.tar.gz
             "#)?;
 
-            if !result.contains("file1") {
-                anyhow::bail!("Archive extraction failed: {}", result);
-            }
+            cheat_ensure!(
+                result.contains("file1"),
+                protects = "tar creates and extracts archives correctly",
+                severity = "CRITICAL",
+                cheats = ["Only check tar exit code", "Skip content verification"],
+                consequence = "tar broken, can't extract downloaded packages",
+                "Archive extraction failed: {}", result
+            );
             Ok("tar/gzip compression works".into())
         })
     }

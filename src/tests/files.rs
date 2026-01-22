@@ -7,9 +7,12 @@
 //! Each test chains commands with && to verify the END-TO-END flow works.
 //! This prevents false positives where individual commands succeed but
 //! the overall capability is broken (e.g., files don't persist).
+//!
+//! Uses cheat_bail! to document cheat vectors in failure messages.
 
 use super::{test_result, Test, TestResult};
 use crate::container::Container;
+use cheat_guard::cheat_ensure;
 
 /// Test: Create a file
 struct CreateFile;
@@ -31,9 +34,14 @@ impl Test for CreateFile {
                 rm /tmp/test_create.txt
             "#)?;
 
-            if !result.contains("hello world") {
-                anyhow::bail!("File content mismatch: {}", result);
-            }
+            cheat_ensure!(
+                result.contains("hello world"),
+                protects = "File content is actually written and readable",
+                severity = "CRITICAL",
+                cheats = ["Only check exit code", "Skip content verification"],
+                consequence = "Files appear to save but data is lost",
+                "File content mismatch: {}", result
+            );
             Ok("Created and verified file content".into())
         })
     }
@@ -58,9 +66,14 @@ impl Test for CopyFile {
                 rm /tmp/orig.txt /tmp/copy.txt
             "#)?;
 
-            if !result.contains("original content") {
-                anyhow::bail!("Copy content mismatch: {}", result);
-            }
+            cheat_ensure!(
+                result.contains("original content"),
+                protects = "cp actually copies file content",
+                severity = "CRITICAL",
+                cheats = ["Only check destination exists", "Skip content verification"],
+                consequence = "Files appear copied but are empty or corrupted",
+                "Copy content mismatch: {}", result
+            );
             Ok("cp preserves file content".into())
         })
     }
@@ -87,9 +100,14 @@ impl Test for MoveFile {
                 rm /tmp/after.txt
             "#)?;
 
-            if !result.contains("moveme") {
-                anyhow::bail!("Moved file content wrong: {}", result);
-            }
+            cheat_ensure!(
+                result.contains("moveme"),
+                protects = "mv preserves content and removes original",
+                severity = "CRITICAL",
+                cheats = ["Only check destination exists", "Skip original removal check"],
+                consequence = "Files appear moved but content lost or original remains",
+                "Moved file content wrong: {}", result
+            );
             Ok("mv removes original and preserves content".into())
         })
     }
@@ -161,9 +179,14 @@ impl Test for FilePermissions {
                 rm /tmp/script.sh
             "#)?;
 
-            if result.trim() != "755" {
-                anyhow::bail!("Expected 755, got '{}'", result.trim());
-            }
+            cheat_ensure!(
+                result.trim() == "755",
+                protects = "chmod actually changes file permissions",
+                severity = "HIGH",
+                cheats = ["Only check chmod exit code", "Skip permission verification"],
+                consequence = "Files have wrong permissions, security vulnerabilities",
+                "Expected 755, got '{}'", result.trim()
+            );
             Ok("chmod changes permissions correctly".into())
         })
     }
@@ -189,12 +212,22 @@ impl Test for SymbolicLinks {
                 rm /tmp/symlink.txt /tmp/linktarget.txt
             "#)?;
 
-            if !result.contains("target content") {
-                anyhow::bail!("Symlink doesn't resolve correctly");
-            }
-            if !result.contains("linktarget.txt") {
-                anyhow::bail!("readlink doesn't show target");
-            }
+            cheat_ensure!(
+                result.contains("target content"),
+                protects = "Symlinks resolve to target content",
+                severity = "CRITICAL",
+                cheats = ["Only check symlink exists", "Skip resolution test"],
+                consequence = "Symlinks broken, software fails to find configs/libraries",
+                "Symlink doesn't resolve correctly"
+            );
+            cheat_ensure!(
+                result.contains("linktarget.txt"),
+                protects = "readlink shows actual symlink target",
+                severity = "HIGH",
+                cheats = ["Skip readlink test"],
+                consequence = "Can't debug symlink issues",
+                "readlink doesn't show target"
+            );
             Ok("symlinks resolve and readlink works".into())
         })
     }
@@ -219,12 +252,22 @@ impl Test for FindFiles {
                 rm -rf /tmp/findtest
             "#)?;
 
-            if !result.contains("file1.txt") || !result.contains("file2.txt") {
-                anyhow::bail!("find didn't locate .txt files");
-            }
-            if result.contains("other.log") {
-                anyhow::bail!("find incorrectly matched .log file");
-            }
+            cheat_ensure!(
+                result.contains("file1.txt") && result.contains("file2.txt"),
+                protects = "find locates files matching pattern",
+                severity = "HIGH",
+                cheats = ["Only check find exit code", "Accept any output"],
+                consequence = "Users can't find files, frustrating UX",
+                "find didn't locate .txt files"
+            );
+            cheat_ensure!(
+                !result.contains("other.log"),
+                protects = "find pattern filters correctly",
+                severity = "MEDIUM",
+                cheats = ["Only check for matches, not non-matches"],
+                consequence = "find returns wrong results, user confusion",
+                "find incorrectly matched .log file"
+            );
             Ok("find filters by pattern correctly".into())
         })
     }

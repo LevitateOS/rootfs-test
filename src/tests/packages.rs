@@ -6,9 +6,12 @@
 //!
 //! Tests verify actual command output contains expected information,
 //! not just that commands exit successfully.
+//!
+//! Uses cheat_ensure! to document cheat vectors in failure messages.
 
 use super::{test_result, Test, TestResult};
 use crate::container::Container;
+use cheat_guard::cheat_ensure;
 
 /// Test: Recipe package manager exists
 struct RecipeExists;
@@ -24,9 +27,14 @@ impl Test for RecipeExists {
         test_result(self.name(), self.ensures(), || {
             let result = c.exec_ok("recipe --version")?;
 
-            if !result.contains("recipe") {
-                anyhow::bail!("recipe not returning version: {}", result);
-            }
+            cheat_ensure!(
+                result.contains("recipe"),
+                protects = "recipe package manager is functional",
+                severity = "CRITICAL",
+                cheats = ["Only check binary exists", "Skip version verification"],
+                consequence = "Package manager broken, can't install software",
+                "recipe not returning version: {}", result
+            );
             Ok(result.trim().into())
         })
     }
@@ -48,9 +56,14 @@ impl Test for RecipeList {
             let result = c.exec_ok("recipe list 2>&1 || recipe --help 2>&1")?;
 
             // As long as recipe runs without crashing
-            if result.is_empty() {
-                anyhow::bail!("recipe produced no output");
-            }
+            cheat_ensure!(
+                !result.is_empty(),
+                protects = "recipe command produces output",
+                severity = "HIGH",
+                cheats = ["Only check exit code", "Accept silent execution"],
+                consequence = "recipe may be broken silently",
+                "recipe produced no output"
+            );
             Ok("recipe command executes".into())
         })
     }
