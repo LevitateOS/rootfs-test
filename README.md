@@ -2,6 +2,36 @@
 
 User experience tests for LevitateOS rootfs. Uses systemd-nspawn to verify the OS works as a daily driver competing with Arch Linux.
 
+## Status
+
+| Metric | Value |
+|--------|-------|
+| Stage | Alpha |
+| Target | x86_64 Linux (systemd-nspawn) |
+| Last verified | 2026-01-23 |
+
+### Works
+
+- Container-based test execution
+- Category filtering (binaries, auth, filesystem, systemd)
+- Test trait for easy test addition
+
+### Known Issues
+
+- See parent repo issues
+
+---
+
+## Author
+
+<!-- HUMAN WRITTEN - DO NOT MODIFY -->
+
+[Waiting for human input]
+
+<!-- END HUMAN WRITTEN -->
+
+---
+
 Each test answers: "Can a user do X with this OS?"
 
 ## Usage
