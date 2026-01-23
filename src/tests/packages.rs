@@ -11,7 +11,7 @@
 
 use super::{test_result, Test, TestResult};
 use crate::container::Container;
-use cheat_guard::cheat_ensure;
+use leviso_cheat_guard::cheat_ensure;
 
 /// Test: Recipe package manager exists
 struct RecipeExists;

@@ -59,25 +59,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a23eb6b1614318a8071c9b2521f36b424b2c83db5eb3a0fead4a6c0809af6e61"
 
 [[package]]
-name = "cheat-guard"
-version = "0.1.0"
-source = "git+https://github.com/LevitateOS/cheat_guard.git?branch=master#24a4fa7367c24d3054277ce975a13061505f050a"
-dependencies = [
- "anyhow",
- "cheat-test",
-]
-
-[[package]]
-name = "cheat-test"
-version = "0.1.0"
-source = "git+https://github.com/LevitateOS/cheat-test.git?branch=master#22b05a55b6701369bfaa696118c13f5546eb304a"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "clap"
 version = "4.5.54"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -136,6 +117,27 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a6cb138bb79a146c1bd460005623e142ef0181e3d0219cb493e02f7d08a35695"
 
 [[package]]
+name = "leviso-cheat-guard"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68d2f8d94cd8d81fdb4a0ff74c5d9dc01e3ebe735b7b46487f576c1bc5c0b486"
+dependencies = [
+ "anyhow",
+ "leviso-cheat-test",
+]
+
+[[package]]
+name = "leviso-cheat-test"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d574f717a896639b5956a16d9f9636c9700be97f77b583a7cc5df83673847f5f"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "once_cell_polyfill"
 version = "1.70.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -164,8 +166,8 @@ name = "rootfs-tests"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "cheat-guard",
  "clap",
+ "leviso-cheat-guard",
 ]
 
 [[package]]
