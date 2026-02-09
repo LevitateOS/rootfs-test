@@ -9,7 +9,7 @@
 //!
 //! Uses cheat_ensure! to document cheat vectors in failure messages.
 
-use super::{test_result, Test, TestResult};
+use super::{Test, TestResult, test_result};
 use crate::container::Container;
 use leviso_cheat_guard::cheat_ensure;
 
@@ -17,8 +17,12 @@ use leviso_cheat_guard::cheat_ensure;
 struct RecipeExists;
 
 impl Test for RecipeExists {
-    fn name(&self) -> &str { "recipe binary" }
-    fn category(&self) -> &str { "packages" }
+    fn name(&self) -> &str {
+        "recipe binary"
+    }
+    fn category(&self) -> &str {
+        "packages"
+    }
     fn ensures(&self) -> &str {
         "Package manager (recipe) is installed and runnable"
     }
@@ -33,7 +37,8 @@ impl Test for RecipeExists {
                 severity = "CRITICAL",
                 cheats = ["Only check binary exists", "Skip version verification"],
                 consequence = "Package manager broken, can't install software",
-                "recipe not returning version: {}", result
+                "recipe not returning version: {}",
+                result
             );
             Ok(result.trim().into())
         })
@@ -44,8 +49,12 @@ impl Test for RecipeExists {
 struct RecipeList;
 
 impl Test for RecipeList {
-    fn name(&self) -> &str { "recipe list" }
-    fn category(&self) -> &str { "packages" }
+    fn name(&self) -> &str {
+        "recipe list"
+    }
+    fn category(&self) -> &str {
+        "packages"
+    }
     fn ensures(&self) -> &str {
         "User can list available/installed packages"
     }
@@ -73,18 +82,24 @@ impl Test for RecipeList {
 struct RecipeConfig;
 
 impl Test for RecipeConfig {
-    fn name(&self) -> &str { "recipe config" }
-    fn category(&self) -> &str { "packages" }
+    fn name(&self) -> &str {
+        "recipe config"
+    }
+    fn category(&self) -> &str {
+        "packages"
+    }
     fn ensures(&self) -> &str {
         "Package manager is configured with repositories"
     }
 
     fn run(&self, c: &Container) -> TestResult {
         test_result(self.name(), self.ensures(), || {
-            c.exec_ok(r#"
+            c.exec_ok(
+                r#"
                 test -d /etc/recipe &&
                 test -d /etc/recipe/repos
-            "#)?;
+            "#,
+            )?;
 
             Ok("recipe config directory exists".into())
         })

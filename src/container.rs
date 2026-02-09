@@ -1,11 +1,12 @@
 //! systemd-nspawn container management for rootfs testing.
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 use std::time::Duration;
 
 /// Manages a systemd-nspawn container for testing.
+#[allow(dead_code)]
 pub struct Container {
     /// Path to the rootfs directory
     rootfs: PathBuf,
@@ -13,6 +14,7 @@ pub struct Container {
     owned: bool,
 }
 
+#[allow(dead_code)]
 impl Container {
     /// Create a container from an existing rootfs directory.
     pub fn from_dir(rootfs: impl AsRef<Path>) -> Result<Self> {
@@ -20,7 +22,10 @@ impl Container {
         if !rootfs.exists() {
             bail!("Rootfs directory does not exist: {}", rootfs.display());
         }
-        Ok(Self { rootfs, owned: false })
+        Ok(Self {
+            rootfs,
+            owned: false,
+        })
     }
 
     /// Create a container by extracting a tarball.
@@ -71,8 +76,8 @@ impl Container {
                 "-D",
                 self.rootfs.to_str().unwrap(),
                 "--pipe",
-                "--volatile=no",  // Don't use tmpfs overlays - persist changes
-                "-q",             // Quiet mode - reduce nspawn noise
+                "--volatile=no", // Don't use tmpfs overlays - persist changes
+                "-q",            // Quiet mode - reduce nspawn noise
                 "/bin/bash",
                 "-c",
                 command,

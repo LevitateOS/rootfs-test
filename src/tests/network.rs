@@ -9,7 +9,7 @@
 //!
 //! Uses cheat_ensure! to document cheat vectors in failure messages.
 
-use super::{test_result, Test, TestResult};
+use super::{Test, TestResult, test_result};
 use crate::container::Container;
 use leviso_cheat_guard::cheat_ensure;
 
@@ -17,18 +17,24 @@ use leviso_cheat_guard::cheat_ensure;
 struct IpCommand;
 
 impl Test for IpCommand {
-    fn name(&self) -> &str { "ip command" }
-    fn category(&self) -> &str { "network" }
+    fn name(&self) -> &str {
+        "ip command"
+    }
+    fn category(&self) -> &str {
+        "network"
+    }
     fn ensures(&self) -> &str {
         "User can view and configure network interfaces"
     }
 
     fn run(&self, c: &Container) -> TestResult {
         test_result(self.name(), self.ensures(), || {
-            let result = c.exec_ok(r#"
+            let result = c.exec_ok(
+                r#"
                 ip link show &&
                 ip addr show lo
-            "#)?;
+            "#,
+            )?;
 
             cheat_ensure!(
                 result.contains("lo"),
@@ -55,18 +61,24 @@ impl Test for IpCommand {
 struct PingCommand;
 
 impl Test for PingCommand {
-    fn name(&self) -> &str { "ping" }
-    fn category(&self) -> &str { "network" }
+    fn name(&self) -> &str {
+        "ping"
+    }
+    fn category(&self) -> &str {
+        "network"
+    }
     fn ensures(&self) -> &str {
         "User can test network connectivity with ping"
     }
 
     fn run(&self, c: &Container) -> TestResult {
         test_result(self.name(), self.ensures(), || {
-            let result = c.exec_ok(r#"
+            let result = c.exec_ok(
+                r#"
                 ping -V &&
                 ping -c 1 127.0.0.1
-            "#)?;
+            "#,
+            )?;
 
             cheat_ensure!(
                 result.contains("iputils") || result.contains("ping"),
@@ -93,8 +105,12 @@ impl Test for PingCommand {
 struct CurlCommand;
 
 impl Test for CurlCommand {
-    fn name(&self) -> &str { "curl" }
-    fn category(&self) -> &str { "network" }
+    fn name(&self) -> &str {
+        "curl"
+    }
+    fn category(&self) -> &str {
+        "network"
+    }
     fn ensures(&self) -> &str {
         "User can download files and interact with HTTP services"
     }
@@ -109,7 +125,8 @@ impl Test for CurlCommand {
                 severity = "CRITICAL",
                 cheats = ["Only check curl exists", "Skip version output"],
                 consequence = "curl broken, can't download files or interact with APIs",
-                "curl not working: {}", result
+                "curl not working: {}",
+                result
             );
             Ok(result.trim().into())
         })
@@ -120,8 +137,12 @@ impl Test for CurlCommand {
 struct DnsConfig;
 
 impl Test for DnsConfig {
-    fn name(&self) -> &str { "DNS config" }
-    fn category(&self) -> &str { "network" }
+    fn name(&self) -> &str {
+        "DNS config"
+    }
+    fn category(&self) -> &str {
+        "network"
+    }
     fn ensures(&self) -> &str {
         "System is configured for DNS resolution"
     }
@@ -149,8 +170,12 @@ impl Test for DnsConfig {
 struct HostsFile;
 
 impl Test for HostsFile {
-    fn name(&self) -> &str { "/etc/hosts" }
-    fn category(&self) -> &str { "network" }
+    fn name(&self) -> &str {
+        "/etc/hosts"
+    }
+    fn category(&self) -> &str {
+        "network"
+    }
     fn ensures(&self) -> &str {
         "Local hostname resolution works via /etc/hosts"
     }
@@ -176,18 +201,24 @@ impl Test for HostsFile {
 struct SsCommand;
 
 impl Test for SsCommand {
-    fn name(&self) -> &str { "ss (sockets)" }
-    fn category(&self) -> &str { "network" }
+    fn name(&self) -> &str {
+        "ss (sockets)"
+    }
+    fn category(&self) -> &str {
+        "network"
+    }
     fn ensures(&self) -> &str {
         "User can inspect network sockets and connections"
     }
 
     fn run(&self, c: &Container) -> TestResult {
         test_result(self.name(), self.ensures(), || {
-            let result = c.exec_ok(r#"
+            let result = c.exec_ok(
+                r#"
                 ss --version &&
                 ss -ln
-            "#)?;
+            "#,
+            )?;
 
             cheat_ensure!(
                 result.contains("iproute"),
@@ -195,7 +226,8 @@ impl Test for SsCommand {
                 severity = "HIGH",
                 cheats = ["Only check ss exists", "Accept any implementation"],
                 consequence = "ss may be broken or incomplete",
-                "ss not from iproute2: {}", result
+                "ss not from iproute2: {}",
+                result
             );
             Ok("ss command works".into())
         })

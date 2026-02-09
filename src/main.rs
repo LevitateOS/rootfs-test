@@ -19,7 +19,7 @@ use std::path::PathBuf;
 use std::time::Instant;
 
 use container::Container;
-use tests::{all_tests, TestResult};
+use tests::{TestResult, all_tests};
 
 #[derive(Parser)]
 #[command(name = "rootfs-tests")]
@@ -54,9 +54,11 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Run { tarball, category, verbose } => {
-            run_tests(&tarball, category, verbose)
-        }
+        Commands::Run {
+            tarball,
+            category,
+            verbose,
+        } => run_tests(&tarball, category, verbose),
         Commands::List => list_tests(),
     }
 }
@@ -126,10 +128,19 @@ fn run_tests(tarball: &PathBuf, category: Option<String>, verbose: bool) -> Resu
     let duration = start.elapsed();
 
     if failed == 0 {
-        println!("✓ All {} tests passed ({:.1}s)", passed, duration.as_secs_f64());
+        println!(
+            "✓ All {} tests passed ({:.1}s)",
+            passed,
+            duration.as_secs_f64()
+        );
         println!("\nThis rootfs is ready for daily driver use.");
     } else {
-        println!("✗ {}/{} tests failed ({:.1}s)\n", failed, results.len(), duration.as_secs_f64());
+        println!(
+            "✗ {}/{} tests failed ({:.1}s)\n",
+            failed,
+            results.len(),
+            duration.as_secs_f64()
+        );
 
         println!("Failed tests:");
         for result in &results {

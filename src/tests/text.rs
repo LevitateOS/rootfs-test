@@ -9,7 +9,7 @@
 //!
 //! Uses cheat_ensure! to document cheat vectors in failure messages.
 
-use super::{test_result, Test, TestResult};
+use super::{Test, TestResult, test_result};
 use crate::container::Container;
 use leviso_cheat_guard::cheat_ensure;
 
@@ -17,19 +17,25 @@ use leviso_cheat_guard::cheat_ensure;
 struct GrepSearch;
 
 impl Test for GrepSearch {
-    fn name(&self) -> &str { "grep search" }
-    fn category(&self) -> &str { "text" }
+    fn name(&self) -> &str {
+        "grep search"
+    }
+    fn category(&self) -> &str {
+        "text"
+    }
     fn ensures(&self) -> &str {
         "User can search for patterns in files"
     }
 
     fn run(&self, c: &Container) -> TestResult {
         test_result(self.name(), self.ensures(), || {
-            let result = c.exec_ok(r#"
+            let result = c.exec_ok(
+                r#"
                 printf 'line one\nerror: something broke\nline three\n' > /tmp/log.txt &&
                 grep 'error' /tmp/log.txt &&
                 rm /tmp/log.txt
-            "#)?;
+            "#,
+            )?;
 
             cheat_ensure!(
                 result.contains("something broke"),
@@ -37,7 +43,8 @@ impl Test for GrepSearch {
                 severity = "CRITICAL",
                 cheats = ["Only check grep exit code", "Accept any output"],
                 consequence = "grep broken, can't search logs or configs",
-                "grep didn't find the error line: {}", result
+                "grep didn't find the error line: {}",
+                result
             );
             Ok("grep pattern matching works".into())
         })
@@ -48,19 +55,25 @@ impl Test for GrepSearch {
 struct SedEdit;
 
 impl Test for SedEdit {
-    fn name(&self) -> &str { "sed substitution" }
-    fn category(&self) -> &str { "text" }
+    fn name(&self) -> &str {
+        "sed substitution"
+    }
+    fn category(&self) -> &str {
+        "text"
+    }
     fn ensures(&self) -> &str {
         "User can perform find-and-replace on text"
     }
 
     fn run(&self, c: &Container) -> TestResult {
         test_result(self.name(), self.ensures(), || {
-            let result = c.exec_ok(r#"
+            let result = c.exec_ok(
+                r#"
                 echo 'hello world' > /tmp/sed.txt &&
                 sed 's/world/universe/' /tmp/sed.txt &&
                 rm /tmp/sed.txt
-            "#)?;
+            "#,
+            )?;
 
             cheat_ensure!(
                 result.contains("hello universe"),
@@ -68,7 +81,8 @@ impl Test for SedEdit {
                 severity = "CRITICAL",
                 cheats = ["Only check sed exit code", "Accept any output"],
                 consequence = "sed broken, can't edit configs programmatically",
-                "sed substitution failed: {}", result
+                "sed substitution failed: {}",
+                result
             );
             Ok("sed s/// works correctly".into())
         })
@@ -79,19 +93,25 @@ impl Test for SedEdit {
 struct AwkFields;
 
 impl Test for AwkFields {
-    fn name(&self) -> &str { "awk fields" }
-    fn category(&self) -> &str { "text" }
+    fn name(&self) -> &str {
+        "awk fields"
+    }
+    fn category(&self) -> &str {
+        "text"
+    }
     fn ensures(&self) -> &str {
         "User can extract columns/fields from structured text"
     }
 
     fn run(&self, c: &Container) -> TestResult {
         test_result(self.name(), self.ensures(), || {
-            let result = c.exec_ok(r#"
+            let result = c.exec_ok(
+                r#"
                 printf 'alice 100\nbob 200\ncharlie 300\n' > /tmp/data.txt &&
                 awk '{print $2}' /tmp/data.txt &&
                 rm /tmp/data.txt
-            "#)?;
+            "#,
+            )?;
 
             cheat_ensure!(
                 result.contains("100") && result.contains("200") && result.contains("300"),
@@ -99,7 +119,8 @@ impl Test for AwkFields {
                 severity = "HIGH",
                 cheats = ["Only check awk exit code", "Accept any output"],
                 consequence = "awk broken, can't parse structured data",
-                "awk field extraction failed: {}", result
+                "awk field extraction failed: {}",
+                result
             );
             Ok("awk field extraction works".into())
         })
@@ -110,19 +131,25 @@ impl Test for AwkFields {
 struct SortText;
 
 impl Test for SortText {
-    fn name(&self) -> &str { "sort" }
-    fn category(&self) -> &str { "text" }
+    fn name(&self) -> &str {
+        "sort"
+    }
+    fn category(&self) -> &str {
+        "text"
+    }
     fn ensures(&self) -> &str {
         "User can sort lines of text"
     }
 
     fn run(&self, c: &Container) -> TestResult {
         test_result(self.name(), self.ensures(), || {
-            let result = c.exec_ok(r#"
+            let result = c.exec_ok(
+                r#"
                 printf 'zebra\napple\nmango\n' > /tmp/unsorted.txt &&
                 sort /tmp/unsorted.txt &&
                 rm /tmp/unsorted.txt
-            "#)?;
+            "#,
+            )?;
 
             let lines: Vec<&str> = result.trim().lines().collect();
             cheat_ensure!(
@@ -131,7 +158,8 @@ impl Test for SortText {
                 severity = "HIGH",
                 cheats = ["Only check sort exit code", "Accept any order"],
                 consequence = "sort broken, can't organize data",
-                "sort order wrong: {:?}", lines
+                "sort order wrong: {:?}",
+                lines
             );
             Ok("sort works correctly".into())
         })
@@ -142,19 +170,25 @@ impl Test for SortText {
 struct WordCount;
 
 impl Test for WordCount {
-    fn name(&self) -> &str { "word count" }
-    fn category(&self) -> &str { "text" }
+    fn name(&self) -> &str {
+        "word count"
+    }
+    fn category(&self) -> &str {
+        "text"
+    }
     fn ensures(&self) -> &str {
         "User can count lines, words, and characters"
     }
 
     fn run(&self, c: &Container) -> TestResult {
         test_result(self.name(), self.ensures(), || {
-            let result = c.exec_ok(r#"
+            let result = c.exec_ok(
+                r#"
                 printf 'one two three\nfour five\n' > /tmp/wc.txt &&
                 wc -l < /tmp/wc.txt &&
                 rm /tmp/wc.txt
-            "#)?;
+            "#,
+            )?;
 
             cheat_ensure!(
                 result.trim() == "2",
@@ -162,7 +196,8 @@ impl Test for WordCount {
                 severity = "HIGH",
                 cheats = ["Only check wc exit code", "Accept any count"],
                 consequence = "wc broken, can't count lines/words",
-                "Expected 2 lines, got {}", result.trim()
+                "Expected 2 lines, got {}",
+                result.trim()
             );
             Ok("wc works correctly".into())
         })
@@ -173,20 +208,26 @@ impl Test for WordCount {
 struct HeadTail;
 
 impl Test for HeadTail {
-    fn name(&self) -> &str { "head/tail" }
-    fn category(&self) -> &str { "text" }
+    fn name(&self) -> &str {
+        "head/tail"
+    }
+    fn category(&self) -> &str {
+        "text"
+    }
     fn ensures(&self) -> &str {
         "User can view beginning or end of files"
     }
 
     fn run(&self, c: &Container) -> TestResult {
         test_result(self.name(), self.ensures(), || {
-            let result = c.exec_ok(r#"
+            let result = c.exec_ok(
+                r#"
                 printf 'line1\nline2\nline3\nline4\nline5\n' > /tmp/lines.txt &&
                 echo "HEAD:" && head -2 /tmp/lines.txt &&
                 echo "TAIL:" && tail -2 /tmp/lines.txt &&
                 rm /tmp/lines.txt
-            "#)?;
+            "#,
+            )?;
 
             // Verify head gets first 2 lines
             cheat_ensure!(
@@ -215,19 +256,25 @@ impl Test for HeadTail {
 struct Pipes;
 
 impl Test for Pipes {
-    fn name(&self) -> &str { "pipes" }
-    fn category(&self) -> &str { "text" }
+    fn name(&self) -> &str {
+        "pipes"
+    }
+    fn category(&self) -> &str {
+        "text"
+    }
     fn ensures(&self) -> &str {
         "User can chain commands with pipes"
     }
 
     fn run(&self, c: &Container) -> TestResult {
         test_result(self.name(), self.ensures(), || {
-            let result = c.exec_ok(r#"
+            let result = c.exec_ok(
+                r#"
                 printf 'ERROR: fail\nINFO: ok\nERROR: bad\n' > /tmp/pipe.txt &&
                 grep ERROR /tmp/pipe.txt | wc -l &&
                 rm /tmp/pipe.txt
-            "#)?;
+            "#,
+            )?;
 
             cheat_ensure!(
                 result.trim() == "2",
@@ -235,7 +282,8 @@ impl Test for Pipes {
                 severity = "CRITICAL",
                 cheats = ["Only check final exit code", "Skip pipe verification"],
                 consequence = "pipes broken, can't chain commands (core Unix feature)",
-                "pipe chain failed, expected 2 errors, got {}", result.trim()
+                "pipe chain failed, expected 2 errors, got {}",
+                result.trim()
             );
             Ok("command piping works".into())
         })
@@ -246,15 +294,20 @@ impl Test for Pipes {
 struct Compression;
 
 impl Test for Compression {
-    fn name(&self) -> &str { "tar/gzip" }
-    fn category(&self) -> &str { "text" }
+    fn name(&self) -> &str {
+        "tar/gzip"
+    }
+    fn category(&self) -> &str {
+        "text"
+    }
     fn ensures(&self) -> &str {
         "User can create and extract compressed archives"
     }
 
     fn run(&self, c: &Container) -> TestResult {
         test_result(self.name(), self.ensures(), || {
-            let result = c.exec_ok(r#"
+            let result = c.exec_ok(
+                r#"
                 mkdir -p /tmp/archive &&
                 echo 'file1' > /tmp/archive/a.txt &&
                 echo 'file2' > /tmp/archive/b.txt &&
@@ -263,7 +316,8 @@ impl Test for Compression {
                 tar -xzf /tmp/archive.tar.gz -C /tmp &&
                 cat /tmp/archive/a.txt &&
                 rm -rf /tmp/archive /tmp/archive.tar.gz
-            "#)?;
+            "#,
+            )?;
 
             cheat_ensure!(
                 result.contains("file1"),
@@ -271,7 +325,8 @@ impl Test for Compression {
                 severity = "CRITICAL",
                 cheats = ["Only check tar exit code", "Skip content verification"],
                 consequence = "tar broken, can't extract downloaded packages",
-                "Archive extraction failed: {}", result
+                "Archive extraction failed: {}",
+                result
             );
             Ok("tar/gzip compression works".into())
         })

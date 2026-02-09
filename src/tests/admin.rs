@@ -9,7 +9,7 @@
 //!
 //! Uses cheat_bail! to document cheat vectors in failure messages.
 
-use super::{test_result, Test, TestResult};
+use super::{Test, TestResult, test_result};
 use crate::container::Container;
 use leviso_cheat_guard::cheat_ensure;
 
@@ -17,21 +17,27 @@ use leviso_cheat_guard::cheat_ensure;
 struct CreateUser;
 
 impl Test for CreateUser {
-    fn name(&self) -> &str { "create user" }
-    fn category(&self) -> &str { "admin" }
+    fn name(&self) -> &str {
+        "create user"
+    }
+    fn category(&self) -> &str {
+        "admin"
+    }
     fn ensures(&self) -> &str {
         "Administrator can create new user accounts"
     }
 
     fn run(&self, c: &Container) -> TestResult {
         test_result(self.name(), self.ensures(), || {
-            let result = c.exec_ok(r#"
+            let result = c.exec_ok(
+                r#"
                 userdel -r testuser 2>/dev/null || true &&
                 useradd -m testuser &&
                 grep testuser /etc/passwd &&
                 test -d /home/testuser &&
                 userdel -r testuser
-            "#)?;
+            "#,
+            )?;
 
             cheat_ensure!(
                 result.contains("testuser"),
@@ -50,21 +56,27 @@ impl Test for CreateUser {
 struct SetPassword;
 
 impl Test for SetPassword {
-    fn name(&self) -> &str { "set password" }
-    fn category(&self) -> &str { "admin" }
+    fn name(&self) -> &str {
+        "set password"
+    }
+    fn category(&self) -> &str {
+        "admin"
+    }
     fn ensures(&self) -> &str {
         "Administrator can set user passwords"
     }
 
     fn run(&self, c: &Container) -> TestResult {
         test_result(self.name(), self.ensures(), || {
-            let result = c.exec_ok(r#"
+            let result = c.exec_ok(
+                r#"
                 userdel -r pwduser 2>/dev/null || true &&
                 useradd -m pwduser &&
                 echo 'pwduser:testpass123' | chpasswd &&
                 grep pwduser /etc/shadow &&
                 userdel -r pwduser
-            "#)?;
+            "#,
+            )?;
 
             // Should have a hash, not ! or *
             cheat_ensure!(
@@ -84,21 +96,27 @@ impl Test for SetPassword {
 struct AddToGroup;
 
 impl Test for AddToGroup {
-    fn name(&self) -> &str { "add to group" }
-    fn category(&self) -> &str { "admin" }
+    fn name(&self) -> &str {
+        "add to group"
+    }
+    fn category(&self) -> &str {
+        "admin"
+    }
     fn ensures(&self) -> &str {
         "Administrator can add users to groups (e.g., wheel for sudo)"
     }
 
     fn run(&self, c: &Container) -> TestResult {
         test_result(self.name(), self.ensures(), || {
-            let result = c.exec_ok(r#"
+            let result = c.exec_ok(
+                r#"
                 userdel -r grpuser 2>/dev/null || true &&
                 useradd -m grpuser &&
                 usermod -aG wheel grpuser &&
                 groups grpuser &&
                 userdel -r grpuser
-            "#)?;
+            "#,
+            )?;
 
             cheat_ensure!(
                 result.contains("wheel"),
@@ -106,7 +124,8 @@ impl Test for AddToGroup {
                 severity = "CRITICAL",
                 cheats = ["Only check exit code", "Skip groups verification"],
                 consequence = "User not in sudo group, can't elevate privileges",
-                "User not in wheel group: {}", result
+                "User not in wheel group: {}",
+                result
             );
             Ok("usermod -aG works correctly".into())
         })
@@ -117,18 +136,24 @@ impl Test for AddToGroup {
 struct SudoWorks;
 
 impl Test for SudoWorks {
-    fn name(&self) -> &str { "sudo execution" }
-    fn category(&self) -> &str { "admin" }
+    fn name(&self) -> &str {
+        "sudo execution"
+    }
+    fn category(&self) -> &str {
+        "admin"
+    }
     fn ensures(&self) -> &str {
         "Users in wheel group can execute commands as root via sudo"
     }
 
     fn run(&self, c: &Container) -> TestResult {
         test_result(self.name(), self.ensures(), || {
-            let result = c.exec_ok(r#"
+            let result = c.exec_ok(
+                r#"
                 sudo --version | head -1 &&
                 grep '%wheel' /etc/sudoers
-            "#)?;
+            "#,
+            )?;
 
             cheat_ensure!(
                 result.contains("Sudo version"),
@@ -155,18 +180,24 @@ impl Test for SudoWorks {
 struct SuWorks;
 
 impl Test for SuWorks {
-    fn name(&self) -> &str { "su switch user" }
-    fn category(&self) -> &str { "admin" }
+    fn name(&self) -> &str {
+        "su switch user"
+    }
+    fn category(&self) -> &str {
+        "admin"
+    }
     fn ensures(&self) -> &str {
         "Users can switch to other accounts with su"
     }
 
     fn run(&self, c: &Container) -> TestResult {
         test_result(self.name(), self.ensures(), || {
-            let result = c.exec_ok(r#"
+            let result = c.exec_ok(
+                r#"
                 su --version | head -1 &&
                 test -f /etc/pam.d/su
-            "#)?;
+            "#,
+            )?;
 
             cheat_ensure!(
                 result.contains("util-linux"),
@@ -174,7 +205,8 @@ impl Test for SuWorks {
                 severity = "HIGH",
                 cheats = ["Only check su exists", "Accept any su implementation"],
                 consequence = "su may be broken or insecure stub",
-                "su not from util-linux: {}", result
+                "su not from util-linux: {}",
+                result
             );
             Ok(result.trim().into())
         })
@@ -185,17 +217,23 @@ impl Test for SuWorks {
 struct SystemdServices;
 
 impl Test for SystemdServices {
-    fn name(&self) -> &str { "systemd services" }
-    fn category(&self) -> &str { "admin" }
+    fn name(&self) -> &str {
+        "systemd services"
+    }
+    fn category(&self) -> &str {
+        "admin"
+    }
     fn ensures(&self) -> &str {
         "Administrator can manage system services with systemctl"
     }
 
     fn run(&self, c: &Container) -> TestResult {
         test_result(self.name(), self.ensures(), || {
-            let result = c.exec_ok(r#"
+            let result = c.exec_ok(
+                r#"
                 systemctl list-unit-files --no-pager 2>&1 | head -20
-            "#)?;
+            "#,
+            )?;
 
             cheat_ensure!(
                 result.contains(".service") || result.contains(".target"),
@@ -203,7 +241,8 @@ impl Test for SystemdServices {
                 severity = "CRITICAL",
                 cheats = ["Only check systemctl exists", "Accept any output"],
                 consequence = "systemd broken, can't manage services",
-                "systemctl not listing units: {}", result
+                "systemctl not listing units: {}",
+                result
             );
             Ok("systemctl can query services".into())
         })
@@ -214,18 +253,24 @@ impl Test for SystemdServices {
 struct HostnameManagement;
 
 impl Test for HostnameManagement {
-    fn name(&self) -> &str { "hostname" }
-    fn category(&self) -> &str { "admin" }
+    fn name(&self) -> &str {
+        "hostname"
+    }
+    fn category(&self) -> &str {
+        "admin"
+    }
     fn ensures(&self) -> &str {
         "Administrator can view and set the system hostname"
     }
 
     fn run(&self, c: &Container) -> TestResult {
         test_result(self.name(), self.ensures(), || {
-            let result = c.exec_ok(r#"
+            let result = c.exec_ok(
+                r#"
                 cat /etc/hostname &&
                 hostname
-            "#)?;
+            "#,
+            )?;
 
             cheat_ensure!(
                 !result.trim().is_empty(),
@@ -235,7 +280,10 @@ impl Test for HostnameManagement {
                 consequence = "No hostname, networking issues",
                 "hostname commands returned empty"
             );
-            Ok(format!("hostname: {}", result.lines().next().unwrap_or("").trim()))
+            Ok(format!(
+                "hostname: {}",
+                result.lines().next().unwrap_or("").trim()
+            ))
         })
     }
 }
@@ -244,8 +292,12 @@ impl Test for HostnameManagement {
 struct SystemLogs;
 
 impl Test for SystemLogs {
-    fn name(&self) -> &str { "journalctl" }
-    fn category(&self) -> &str { "admin" }
+    fn name(&self) -> &str {
+        "journalctl"
+    }
+    fn category(&self) -> &str {
+        "admin"
+    }
     fn ensures(&self) -> &str {
         "Administrator can view system logs"
     }
@@ -260,7 +312,8 @@ impl Test for SystemLogs {
                 severity = "HIGH",
                 cheats = ["Only check journalctl exists", "Accept any output"],
                 consequence = "Can't view system logs, debugging impossible",
-                "journalctl not working: {}", result
+                "journalctl not working: {}",
+                result
             );
             Ok(result.trim().into())
         })
