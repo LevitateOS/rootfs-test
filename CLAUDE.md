@@ -25,7 +25,7 @@ Each test answers: "Can a user do X with this OS?" - file operations, text proce
 cargo run -- run
 
 # Run with specific tarball
-cargo run -- run --tarball ../leviso/output/levitateos-base.tar.xz
+cargo run -- run --tarball .artifacts/out/leviso/levitateos-base.tar.xz
 
 # Run against existing rootfs (faster, no extraction)
 cargo run -- run --rootfs /var/lib/machines/levitate-test

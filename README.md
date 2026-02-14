@@ -41,7 +41,7 @@ Each test answers: "Can a user do X with this OS?"
 cargo run -- run
 
 # Run with specific tarball
-cargo run -- run --tarball ../leviso/output/levitateos-base.tar.xz
+cargo run -- run --tarball .artifacts/out/leviso/levitateos-base.tar.xz
 
 # Run specific category only
 cargo run -- run --category auth
@@ -70,7 +70,7 @@ LevitateOS Rootfs Tests
 
 Testing: Can a user use this as a daily driver OS?
 
-Extracting ../leviso/output/levitateos-base.tar.xz ...
+Extracting .artifacts/out/leviso/levitateos-base.tar.xz ...
 Ready.
 
 ━━━ BINARIES ━━━
