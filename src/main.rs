@@ -34,7 +34,7 @@ enum Commands {
     /// Run all tests
     Run {
         /// Path to rootfs tarball
-        #[arg(long, default_value = ".artifacts/out/leviso/levitateos-base.tar.xz")]
+        #[arg(long, default_value = ".artifacts/out/levitate/levitateos-base.tar.xz")]
         tarball: PathBuf,
 
         /// Run only tests in a specific category
