@@ -19,8 +19,11 @@ impl Container {
     /// Create a container from an existing rootfs directory.
     pub fn from_dir(rootfs: impl AsRef<Path>) -> Result<Self> {
         let rootfs = rootfs.as_ref().to_path_buf();
-        if !rootfs.exists() {
-            bail!("Rootfs directory does not exist: {}", rootfs.display());
+        if !rootfs.is_dir() {
+            bail!(
+                "rootfs-tests: expected an existing rootfs directory at {}; use --rootfs <directory> or --tarball <archive>",
+                rootfs.display()
+            );
         }
         Ok(Self {
             rootfs,
@@ -37,13 +40,19 @@ impl Container {
             bail!("Tarball not found: {}", tarball.display());
         }
 
-        // Clean up existing directory
-        if target.exists() {
-            std::fs::remove_dir_all(target)
-                .context("Failed to remove existing rootfs directory")?;
-        }
-        std::fs::create_dir_all(target)?;
+        // Never delete an existing path supplied by a caller. Archive runs use a fresh target.
+        std::fs::create_dir(target).with_context(|| {
+            format!(
+                "rootfs-tests: extraction target must be new: {}",
+                target.display()
+            )
+        })?;
+        let container = Self {
+            rootfs: target.to_path_buf(),
+            owned: true,
+        };
 
+        // Keep ownership during extraction so partial failures also clean up.
         // Extract tarball
         let status = Command::new("sudo")
             .args(["tar", "-xJf"])
@@ -57,10 +66,7 @@ impl Container {
             bail!("Failed to extract tarball");
         }
 
-        Ok(Self {
-            rootfs: target.to_path_buf(),
-            owned: true,
-        })
+        Ok(container)
     }
 
     /// Execute a command in the container and return the output.
@@ -154,16 +160,32 @@ impl Container {
     pub fn rootfs(&self) -> &Path {
         &self.rootfs
     }
+
+    /// Remove an extraction owned by this run; borrowed rootfs inputs are preserved.
+    pub fn cleanup(&mut self) -> Result<()> {
+        if !self.owned {
+            return Ok(());
+        }
+        let status = Command::new("sudo")
+            .args(["-n", "rm", "-rf", "--"])
+            .arg(&self.rootfs)
+            .status()
+            .context("rootfs-tests: could not execute temporary-rootfs cleanup")?;
+        if !status.success() {
+            bail!(
+                "rootfs-tests: cleanup failed for {}; resolve permissions and remove this temporary extraction directory",
+                self.rootfs.display()
+            );
+        }
+        self.owned = false;
+        Ok(())
+    }
 }
 
 impl Drop for Container {
     fn drop(&mut self) {
-        if self.owned {
-            // Clean up the rootfs we created
-            let _ = Command::new("sudo")
-                .args(["rm", "-rf"])
-                .arg(&self.rootfs)
-                .status();
+        if let Err(error) = self.cleanup() {
+            eprintln!("{error:#}");
         }
     }
 }

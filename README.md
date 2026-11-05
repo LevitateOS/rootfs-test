@@ -43,6 +43,9 @@ cargo run -- run
 # Run with specific tarball
 cargo run -- run --tarball .artifacts/out/levitate/levitateos-base.tar.xz
 
+# Reuse an existing rootfs without extracting or deleting it
+cargo run -- run --rootfs /var/lib/machines/levitate-test
+
 # Run specific category only
 cargo run -- run --category auth
 
@@ -86,7 +89,7 @@ Ready.
 
 ✓ All 15 tests passed (2.3s)
 
-This rootfs is ready for daily driver use.
+All selected runtime checks passed.
 ```
 
 ## Adding Tests
@@ -135,3 +138,9 @@ rootfs-tests/
 ## License
 
 MIT
+
+Archive runs extract into a unique temporary directory and clean it on return, including failed checks. Unknown categories fail before extraction; they never count as a passing run. CLI integration checks can run without root or a rootfs:
+
+```bash
+cargo test -p rootfs-tests --test cli
+```

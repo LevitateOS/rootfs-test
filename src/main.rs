@@ -13,9 +13,9 @@
 mod container;
 mod tests;
 
-use anyhow::Result;
+use anyhow::{Result, bail};
 use clap::{Parser, Subcommand};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::Instant;
 
 use container::Container;
@@ -34,8 +34,12 @@ enum Commands {
     /// Run all tests
     Run {
         /// Path to rootfs tarball
-        #[arg(long, default_value = ".artifacts/out/levitate/levitateos-base.tar.xz")]
-        tarball: PathBuf,
+        #[arg(long, conflicts_with = "rootfs")]
+        tarball: Option<PathBuf>,
+
+        /// Use an existing rootfs without extracting or deleting it
+        #[arg(long, conflicts_with = "tarball")]
+        rootfs: Option<PathBuf>,
 
         /// Run only tests in a specific category
         #[arg(long)]
@@ -56,36 +60,62 @@ fn main() -> Result<()> {
     match cli.command {
         Commands::Run {
             tarball,
+            rootfs,
             category,
             verbose,
-        } => run_tests(&tarball, category, verbose),
+        } => run_tests(tarball.as_deref(), rootfs.as_deref(), category, verbose),
         Commands::List => list_tests(),
     }
 }
 
-fn run_tests(tarball: &PathBuf, category: Option<String>, verbose: bool) -> Result<()> {
+fn run_tests(
+    tarball: Option<&Path>,
+    rootfs: Option<&Path>,
+    category: Option<String>,
+    verbose: bool,
+) -> Result<()> {
+    let all = all_tests();
+    let categories: std::collections::BTreeSet<_> =
+        all.iter().map(|test| test.category().to_string()).collect();
+    let tests: Vec<_> = if let Some(ref cat) = category {
+        all.into_iter()
+            .filter(|test| test.category() == cat)
+            .collect()
+    } else {
+        all
+    };
+    if tests.is_empty() {
+        bail!(
+            "rootfs-tests: no runtime checks selected for category {:?}; available categories: {}. Run rootfs-tests list or choose --category <category>",
+            category,
+            categories.into_iter().collect::<Vec<_>>().join(", ")
+        );
+    }
+
     println!("LevitateOS Rootfs Tests");
     println!("=======================\n");
     println!("Testing: Can a user use this as a daily driver OS?\n");
 
-    // Extract tarball
-    let target_dir = PathBuf::from("/var/lib/machines/levitate-rootfs-test");
-    println!("Extracting {} ...", tarball.display());
-    let container = Container::from_tarball(tarball, &target_dir)?;
-    println!("Ready.\n");
-
-    // Get tests
-    let all = all_tests();
-    let tests: Vec<_> = if let Some(ref cat) = category {
-        all.into_iter().filter(|t| t.category() == cat).collect()
+    // Each archive run owns a fresh directory; existing rootfs inputs are borrowed.
+    let extracted = if rootfs.is_none() {
+        Some(
+            tempfile::Builder::new()
+                .prefix("levitate-rootfs-test-")
+                .tempdir()?,
+        )
     } else {
-        all
+        None
     };
-
-    if tests.is_empty() {
-        println!("No tests found for category: {:?}", category);
-        return Ok(());
-    }
+    let mut container = if let Some(rootfs) = rootfs {
+        println!("Using rootfs {} ...", rootfs.display());
+        Container::from_dir(rootfs)?
+    } else {
+        let tarball =
+            tarball.unwrap_or_else(|| Path::new(".artifacts/out/levitate/levitateos-base.tar.xz"));
+        println!("Extracting {} ...", tarball.display());
+        Container::from_tarball(tarball, extracted.as_ref().unwrap().path().join("rootfs"))?
+    };
+    println!("Ready.\n");
 
     // Run tests
     let start = Instant::now();
@@ -114,44 +144,28 @@ fn run_tests(tarball: &PathBuf, category: Option<String>, verbose: bool) -> Resu
             println!("✗ {} FAILED", result.name);
             println!("  ensures: {}", result.ensures);
             println!("  error: {}", result.output);
-            std::process::exit(1);
+            bail!(
+                "rootfs-tests: runtime check '{}' failed: {}",
+                result.name,
+                result.output
+            );
         }
 
         results.push(result);
     }
 
+    // A successful run must also clean up its owned extraction successfully.
+    container.cleanup()?;
+
     // Summary
     println!("\n════════════════════════════════════════════════════════════\n");
 
-    let passed = results.iter().filter(|r| r.passed).count();
-    let failed = results.iter().filter(|r| !r.passed).count();
-    let duration = start.elapsed();
-
-    if failed == 0 {
-        println!(
-            "✓ All {} tests passed ({:.1}s)",
-            passed,
-            duration.as_secs_f64()
-        );
-        println!("\nThis rootfs is ready for daily driver use.");
-    } else {
-        println!(
-            "✗ {}/{} tests failed ({:.1}s)\n",
-            failed,
-            results.len(),
-            duration.as_secs_f64()
-        );
-
-        println!("Failed tests:");
-        for result in &results {
-            if !result.passed {
-                println!("\n  ✗ {}", result.name);
-                println!("    ensures: {}", result.ensures);
-                println!("    error: {}", result.output);
-            }
-        }
-        std::process::exit(1);
-    }
+    println!(
+        "✓ All {} selected tests passed ({:.1}s)",
+        results.len(),
+        start.elapsed().as_secs_f64()
+    );
+    println!("\nAll selected runtime checks passed.");
 
     Ok(())
 }
