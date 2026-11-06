@@ -7,11 +7,9 @@
 //! Each test chains operations and verifies the ACTUAL outcome,
 //! not just that commands ran without error.
 //!
-//! Uses cheat_bail! to document cheat vectors in failure messages.
 
-use super::{Test, TestResult, test_result};
+use super::{test_result, Test, TestResult};
 use crate::container::Container;
-use leviso_cheat_guard::cheat_ensure;
 
 /// Test: Create a user
 struct CreateUser;
@@ -39,14 +37,7 @@ impl Test for CreateUser {
             "#,
             )?;
 
-            cheat_ensure!(
-                result.contains("testuser"),
-                protects = "useradd creates user entry in /etc/passwd",
-                severity = "CRITICAL",
-                cheats = ["Only check exit code", "Skip passwd verification"],
-                consequence = "Users created but can't login - no passwd entry",
-                "User not in /etc/passwd"
-            );
+            anyhow::ensure!(result.contains("testuser"), "User not in /etc/passwd");
             Ok("useradd creates user with home directory".into())
         })
     }
@@ -79,12 +70,8 @@ impl Test for SetPassword {
             )?;
 
             // Should have a hash, not ! or *
-            cheat_ensure!(
+            anyhow::ensure!(
                 !result.contains("pwduser:!") && !result.contains("pwduser:*"),
-                protects = "chpasswd actually sets password hash",
-                severity = "CRITICAL",
-                cheats = ["Only check exit code", "Skip shadow verification"],
-                consequence = "Users created with locked accounts, can't login",
                 "Password not set (still locked)"
             );
             Ok("chpasswd sets password hash".into())
@@ -118,12 +105,8 @@ impl Test for AddToGroup {
             "#,
             )?;
 
-            cheat_ensure!(
+            anyhow::ensure!(
                 result.contains("wheel"),
-                protects = "usermod -aG adds user to group",
-                severity = "CRITICAL",
-                cheats = ["Only check exit code", "Skip groups verification"],
-                consequence = "User not in sudo group, can't elevate privileges",
                 "User not in wheel group: {}",
                 result
             );
@@ -155,20 +138,9 @@ impl Test for SudoWorks {
             "#,
             )?;
 
-            cheat_ensure!(
-                result.contains("Sudo version"),
-                protects = "sudo binary is functional",
-                severity = "CRITICAL",
-                cheats = ["Only check sudo exists", "Skip version check"],
-                consequence = "sudo installed but broken, users can't elevate",
-                "sudo not working"
-            );
-            cheat_ensure!(
+            anyhow::ensure!(result.contains("Sudo version"), "sudo not working");
+            anyhow::ensure!(
                 result.contains("ALL=(ALL"),
-                protects = "wheel group has sudo privileges in sudoers",
-                severity = "CRITICAL",
-                cheats = ["Only check sudoers exists", "Skip wheel config check"],
-                consequence = "sudo works but wheel can't use it",
                 "wheel not configured in sudoers"
             );
             Ok("sudo configured for wheel group".into())
@@ -199,12 +171,8 @@ impl Test for SuWorks {
             "#,
             )?;
 
-            cheat_ensure!(
+            anyhow::ensure!(
                 result.contains("util-linux"),
-                protects = "su is from util-linux (proper implementation)",
-                severity = "HIGH",
-                cheats = ["Only check su exists", "Accept any su implementation"],
-                consequence = "su may be broken or insecure stub",
                 "su not from util-linux: {}",
                 result
             );
@@ -235,12 +203,8 @@ impl Test for SystemdServices {
             "#,
             )?;
 
-            cheat_ensure!(
+            anyhow::ensure!(
                 result.contains(".service") || result.contains(".target"),
-                protects = "systemctl can list unit files",
-                severity = "CRITICAL",
-                cheats = ["Only check systemctl exists", "Accept any output"],
-                consequence = "systemd broken, can't manage services",
                 "systemctl not listing units: {}",
                 result
             );
@@ -272,12 +236,8 @@ impl Test for HostnameManagement {
             "#,
             )?;
 
-            cheat_ensure!(
+            anyhow::ensure!(
                 !result.trim().is_empty(),
-                protects = "hostname is configured and readable",
-                severity = "HIGH",
-                cheats = ["Only check hostname command exists", "Accept empty output"],
-                consequence = "No hostname, networking issues",
                 "hostname commands returned empty"
             );
             Ok(format!(
@@ -306,12 +266,8 @@ impl Test for SystemLogs {
         test_result(self.name(), self.ensures(), || {
             let result = c.exec_ok("journalctl --version | head -1")?;
 
-            cheat_ensure!(
+            anyhow::ensure!(
                 result.contains("systemd"),
-                protects = "journalctl is functional",
-                severity = "HIGH",
-                cheats = ["Only check journalctl exists", "Accept any output"],
-                consequence = "Can't view system logs, debugging impossible",
                 "journalctl not working: {}",
                 result
             );

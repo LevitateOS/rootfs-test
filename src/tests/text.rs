@@ -7,11 +7,9 @@
 //! Each test chains all operations in a single exec() call to verify
 //! the complete workflow functions correctly end-to-end.
 //!
-//! Uses cheat_ensure! to document cheat vectors in failure messages.
 
-use super::{Test, TestResult, test_result};
+use super::{test_result, Test, TestResult};
 use crate::container::Container;
-use leviso_cheat_guard::cheat_ensure;
 
 /// Test: Search text with grep
 struct GrepSearch;
@@ -37,12 +35,8 @@ impl Test for GrepSearch {
             "#,
             )?;
 
-            cheat_ensure!(
+            anyhow::ensure!(
                 result.contains("something broke"),
-                protects = "grep finds matching lines",
-                severity = "CRITICAL",
-                cheats = ["Only check grep exit code", "Accept any output"],
-                consequence = "grep broken, can't search logs or configs",
                 "grep didn't find the error line: {}",
                 result
             );
@@ -75,12 +69,8 @@ impl Test for SedEdit {
             "#,
             )?;
 
-            cheat_ensure!(
+            anyhow::ensure!(
                 result.contains("hello universe"),
-                protects = "sed performs substitutions correctly",
-                severity = "CRITICAL",
-                cheats = ["Only check sed exit code", "Accept any output"],
-                consequence = "sed broken, can't edit configs programmatically",
                 "sed substitution failed: {}",
                 result
             );
@@ -113,12 +103,8 @@ impl Test for AwkFields {
             "#,
             )?;
 
-            cheat_ensure!(
+            anyhow::ensure!(
                 result.contains("100") && result.contains("200") && result.contains("300"),
-                protects = "awk extracts fields correctly",
-                severity = "HIGH",
-                cheats = ["Only check awk exit code", "Accept any output"],
-                consequence = "awk broken, can't parse structured data",
                 "awk field extraction failed: {}",
                 result
             );
@@ -152,12 +138,8 @@ impl Test for SortText {
             )?;
 
             let lines: Vec<&str> = result.trim().lines().collect();
-            cheat_ensure!(
+            anyhow::ensure!(
                 lines == vec!["apple", "mango", "zebra"],
-                protects = "sort orders lines alphabetically",
-                severity = "HIGH",
-                cheats = ["Only check sort exit code", "Accept any order"],
-                consequence = "sort broken, can't organize data",
                 "sort order wrong: {:?}",
                 lines
             );
@@ -190,12 +172,8 @@ impl Test for WordCount {
             "#,
             )?;
 
-            cheat_ensure!(
+            anyhow::ensure!(
                 result.trim() == "2",
-                protects = "wc counts lines correctly",
-                severity = "HIGH",
-                cheats = ["Only check wc exit code", "Accept any count"],
-                consequence = "wc broken, can't count lines/words",
                 "Expected 2 lines, got {}",
                 result.trim()
             );
@@ -230,21 +208,13 @@ impl Test for HeadTail {
             )?;
 
             // Verify head gets first 2 lines
-            cheat_ensure!(
+            anyhow::ensure!(
                 result.contains("line1") && result.contains("line2"),
-                protects = "head shows first N lines",
-                severity = "HIGH",
-                cheats = ["Only check head exit code", "Accept any output"],
-                consequence = "head broken, can't preview files",
                 "head missing expected lines"
             );
             // Verify tail gets last 2 lines
-            cheat_ensure!(
+            anyhow::ensure!(
                 result.contains("line4") && result.contains("line5"),
-                protects = "tail shows last N lines",
-                severity = "HIGH",
-                cheats = ["Only check tail exit code", "Accept any output"],
-                consequence = "tail broken, can't view log ends",
                 "tail missing expected lines"
             );
             Ok("head and tail work correctly".into())
@@ -276,12 +246,8 @@ impl Test for Pipes {
             "#,
             )?;
 
-            cheat_ensure!(
+            anyhow::ensure!(
                 result.trim() == "2",
-                protects = "pipes connect command input/output",
-                severity = "CRITICAL",
-                cheats = ["Only check final exit code", "Skip pipe verification"],
-                consequence = "pipes broken, can't chain commands (core Unix feature)",
                 "pipe chain failed, expected 2 errors, got {}",
                 result.trim()
             );
@@ -319,12 +285,8 @@ impl Test for Compression {
             "#,
             )?;
 
-            cheat_ensure!(
+            anyhow::ensure!(
                 result.contains("file1"),
-                protects = "tar creates and extracts archives correctly",
-                severity = "CRITICAL",
-                cheats = ["Only check tar exit code", "Skip content verification"],
-                consequence = "tar broken, can't extract downloaded packages",
                 "Archive extraction failed: {}",
                 result
             );

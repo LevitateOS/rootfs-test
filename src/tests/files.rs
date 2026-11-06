@@ -8,11 +8,9 @@
 //! This prevents false positives where individual commands succeed but
 //! the overall capability is broken (e.g., files don't persist).
 //!
-//! Uses cheat_bail! to document cheat vectors in failure messages.
 
-use super::{Test, TestResult, test_result};
+use super::{test_result, Test, TestResult};
 use crate::container::Container;
-use leviso_cheat_guard::cheat_ensure;
 
 /// Test: Create a file
 struct CreateFile;
@@ -40,12 +38,8 @@ impl Test for CreateFile {
             "#,
             )?;
 
-            cheat_ensure!(
+            anyhow::ensure!(
                 result.contains("hello world"),
-                protects = "File content is actually written and readable",
-                severity = "CRITICAL",
-                cheats = ["Only check exit code", "Skip content verification"],
-                consequence = "Files appear to save but data is lost",
                 "File content mismatch: {}",
                 result
             );
@@ -79,12 +73,8 @@ impl Test for CopyFile {
             "#,
             )?;
 
-            cheat_ensure!(
+            anyhow::ensure!(
                 result.contains("original content"),
-                protects = "cp actually copies file content",
-                severity = "CRITICAL",
-                cheats = ["Only check destination exists", "Skip content verification"],
-                consequence = "Files appear copied but are empty or corrupted",
                 "Copy content mismatch: {}",
                 result
             );
@@ -120,15 +110,8 @@ impl Test for MoveFile {
             "#,
             )?;
 
-            cheat_ensure!(
+            anyhow::ensure!(
                 result.contains("moveme"),
-                protects = "mv preserves content and removes original",
-                severity = "CRITICAL",
-                cheats = [
-                    "Only check destination exists",
-                    "Skip original removal check"
-                ],
-                consequence = "Files appear moved but content lost or original remains",
                 "Moved file content wrong: {}",
                 result
             );
@@ -221,12 +204,8 @@ impl Test for FilePermissions {
             "#,
             )?;
 
-            cheat_ensure!(
+            anyhow::ensure!(
                 result.trim() == "755",
-                protects = "chmod actually changes file permissions",
-                severity = "HIGH",
-                cheats = ["Only check chmod exit code", "Skip permission verification"],
-                consequence = "Files have wrong permissions, security vulnerabilities",
                 "Expected 755, got '{}'",
                 result.trim()
             );
@@ -261,20 +240,12 @@ impl Test for SymbolicLinks {
             "#,
             )?;
 
-            cheat_ensure!(
+            anyhow::ensure!(
                 result.contains("target content"),
-                protects = "Symlinks resolve to target content",
-                severity = "CRITICAL",
-                cheats = ["Only check symlink exists", "Skip resolution test"],
-                consequence = "Symlinks broken, software fails to find configs/libraries",
                 "Symlink doesn't resolve correctly"
             );
-            cheat_ensure!(
+            anyhow::ensure!(
                 result.contains("linktarget.txt"),
-                protects = "readlink shows actual symlink target",
-                severity = "HIGH",
-                cheats = ["Skip readlink test"],
-                consequence = "Can't debug symlink issues",
                 "readlink doesn't show target"
             );
             Ok("symlinks resolve and readlink works".into())
@@ -307,20 +278,12 @@ impl Test for FindFiles {
             "#,
             )?;
 
-            cheat_ensure!(
+            anyhow::ensure!(
                 result.contains("file1.txt") && result.contains("file2.txt"),
-                protects = "find locates files matching pattern",
-                severity = "HIGH",
-                cheats = ["Only check find exit code", "Accept any output"],
-                consequence = "Users can't find files, frustrating UX",
                 "find didn't locate .txt files"
             );
-            cheat_ensure!(
+            anyhow::ensure!(
                 !result.contains("other.log"),
-                protects = "find pattern filters correctly",
-                severity = "MEDIUM",
-                cheats = ["Only check for matches, not non-matches"],
-                consequence = "find returns wrong results, user confusion",
                 "find incorrectly matched .log file"
             );
             Ok("find filters by pattern correctly".into())

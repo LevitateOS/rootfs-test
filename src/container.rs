@@ -73,8 +73,8 @@ impl Container {
     ///
     /// Note: Each exec() is a separate nspawn invocation. To verify state
     /// persists across commands, chain them with && in a single exec() call.
-    /// This mirrors real user behavior and prevents "reward hacking" where
-    /// individual commands pass but the end-to-end flow doesn't work.
+    /// This mirrors real user behavior: individual commands can pass while
+    /// the end-to-end flow doesn't work.
     pub fn exec(&self, command: &str) -> Result<Output> {
         let output = Command::new("sudo")
             .args([

@@ -7,11 +7,9 @@
 //!
 //! Tests verify actual command output, not just exit codes.
 //!
-//! Uses cheat_ensure! to document cheat vectors in failure messages.
 
-use super::{Test, TestResult, test_result};
+use super::{test_result, Test, TestResult};
 use crate::container::Container;
-use leviso_cheat_guard::cheat_ensure;
 
 /// Test: IP command works
 struct IpCommand;
@@ -36,20 +34,9 @@ impl Test for IpCommand {
             "#,
             )?;
 
-            cheat_ensure!(
-                result.contains("lo"),
-                protects = "ip command lists network interfaces",
-                severity = "CRITICAL",
-                cheats = ["Only check ip exit code", "Accept any output"],
-                consequence = "ip broken, can't configure networking",
-                "ip link show didn't list loopback"
-            );
-            cheat_ensure!(
+            anyhow::ensure!(result.contains("lo"), "ip link show didn't list loopback");
+            anyhow::ensure!(
                 result.contains("127.0.0.1"),
-                protects = "loopback interface has IP address",
-                severity = "CRITICAL",
-                cheats = ["Only check interface exists", "Skip IP verification"],
-                consequence = "localhost networking broken",
                 "loopback doesn't have 127.0.0.1"
             );
             Ok("ip command works".into())
@@ -80,20 +67,12 @@ impl Test for PingCommand {
             "#,
             )?;
 
-            cheat_ensure!(
+            anyhow::ensure!(
                 result.contains("iputils") || result.contains("ping"),
-                protects = "ping command is functional",
-                severity = "HIGH",
-                cheats = ["Only check ping exists", "Skip version check"],
-                consequence = "ping broken, can't test connectivity",
                 "ping not working"
             );
-            cheat_ensure!(
+            anyhow::ensure!(
                 result.contains("1 received") || result.contains("1 packets received"),
-                protects = "ping can reach localhost",
-                severity = "CRITICAL",
-                cheats = ["Only check ping exits", "Skip packet verification"],
-                consequence = "Network stack broken, can't reach localhost",
                 "ping loopback failed"
             );
             Ok("ping works".into())
@@ -119,15 +98,7 @@ impl Test for CurlCommand {
         test_result(self.name(), self.ensures(), || {
             let result = c.exec_ok("curl --version | head -1")?;
 
-            cheat_ensure!(
-                result.contains("curl"),
-                protects = "curl command is functional",
-                severity = "CRITICAL",
-                cheats = ["Only check curl exists", "Skip version output"],
-                consequence = "curl broken, can't download files or interact with APIs",
-                "curl not working: {}",
-                result
-            );
+            anyhow::ensure!(result.contains("curl"), "curl not working: {}", result);
             Ok(result.trim().into())
         })
     }
@@ -153,14 +124,7 @@ impl Test for DnsConfig {
             // Just check nsswitch.conf has hosts entry
             let result = c.exec_ok("grep hosts /etc/nsswitch.conf")?;
 
-            cheat_ensure!(
-                !result.is_empty(),
-                protects = "nsswitch.conf has hosts configuration",
-                severity = "HIGH",
-                cheats = ["Only check file exists", "Skip content verification"],
-                consequence = "DNS resolution may not work",
-                "No hosts entry in nsswitch.conf"
-            );
+            anyhow::ensure!(!result.is_empty(), "No hosts entry in nsswitch.conf");
             Ok("DNS resolution configured".into())
         })
     }
@@ -184,12 +148,8 @@ impl Test for HostsFile {
         test_result(self.name(), self.ensures(), || {
             let result = c.exec_ok("cat /etc/hosts")?;
 
-            cheat_ensure!(
+            anyhow::ensure!(
                 result.contains("127.0.0.1") && result.contains("localhost"),
-                protects = "/etc/hosts has localhost entry",
-                severity = "CRITICAL",
-                cheats = ["Only check file exists", "Skip content verification"],
-                consequence = "localhost resolution broken, many apps fail",
                 "/etc/hosts missing localhost entry"
             );
             Ok("/etc/hosts configured correctly".into())
@@ -220,12 +180,8 @@ impl Test for SsCommand {
             "#,
             )?;
 
-            cheat_ensure!(
+            anyhow::ensure!(
                 result.contains("iproute"),
-                protects = "ss is from iproute2 (proper implementation)",
-                severity = "HIGH",
-                cheats = ["Only check ss exists", "Accept any implementation"],
-                consequence = "ss may be broken or incomplete",
                 "ss not from iproute2: {}",
                 result
             );
